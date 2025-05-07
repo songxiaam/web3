@@ -169,6 +169,6 @@ describe("RCCStake", function () {
       await expect(rccStake.connect(user1).claim(1)).to.emit(rccStake, "Claim").withArgs(user1.getAddress(), 1, anyValue);
 
     })
-
+ 
   })
 });
