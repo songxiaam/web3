@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import "./SafeErc20.sol";
-import "../interface/IERC20.sol";
 
 contract SafeTransfer {
   using SafeERC20 for IERC20;
@@ -10,6 +9,7 @@ contract SafeTransfer {
   // 赎回
   event Redeem(address indexed recieptor, address indexed token, uint256 amount);
 
+  // 获取实际amount
   function getPayableAmount(address token, uint256 amount) internal returns (uint256) {
     if (token == address(0)) {
       amount = msg.value;
