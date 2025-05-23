@@ -1,0 +1,66 @@
+[mysql]
+address = "127.0.0.1"
+port = "3307"
+db_name = "tables"
+user_name = "root"
+password = "12345678"
+max_open_conns = 10
+max_idle_conns = 10
+max_life_time = 100
+
+[redis]
+address = "127.0.0.1"
+port = "6379"
+db = "0"
+user_name = ""
+password = "123456"
+max_idle = 10
+max_active = 10
+idle_timeout = 10
+
+[testnet]
+chain_id = "97"
+net_url = "https://sepolia.infura.io/v3/28d8f32dde1d480f91f2e3cecf91ca3e"
+plgr_address = ""
+pledge_pool_token = ""
+bsc_pledge_oracle_token = ""
+
+[mainnet]
+chain_id = "56"
+net_url = "https://mainnet.infura.io/v3/28d8f32dde1d480f91f2e3cecf91ca3e"
+plgr_address = ""
+pledge_pool_token = ""
+bsc_pledge_oracle_token = ""
+
+[token]
+logo_url = ""
+
+[defaultadmin]
+user_name = ""
+password = ""
+
+[jwt]
+expire_time = 2592000
+secret_key = ""
+
+[env]
+port = "8080"
+version = "22"
+protocol = "http"
+task_duration = 2
+task_extend_duration = 5
+wss_timeout_duration = 20
+domain_name = "dev-v2-backend.pledger.finance"
+
+[threshold]
+pledge_pool_token_threshold_bnb = "100000000000000000"
+
+[email]
+user_name=""
+password = ""
+host = "smtp.gmail.com"
+port = "587"
+from = "pledge beidge <test@gmail.com>"
+subject = "Insufficient balance of bridge account"
+to = ["xxx@outlook.com"]
+cc = ["xx@gmail.com"]

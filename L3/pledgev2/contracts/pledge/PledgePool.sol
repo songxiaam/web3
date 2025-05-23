@@ -44,7 +44,7 @@ contract PledgePool is ReentrancyGuard, SafeTransfer, multiSignatureClient {
         uint256 maxSupply; //池最大限额
         uint256 lendSupply; //当前实际存款
         uint256 borrowSupply; //当前实际借款(借款人作为质押的token)
-        uint256 martgageRate; //池的抵押率, 单位1e8
+        uint256 mortgageRate; //池的抵押率, 单位1e8
         address lendToken; //贷款代币地址,出借人
         address borrowToken; //借款代币地址
         PoolState state; //当前状态
@@ -333,7 +333,7 @@ contract PledgePool is ReentrancyGuard, SafeTransfer, multiSignatureClient {
         uint256 _endTime,
         uint256 _interestRate,
         uint256 _maxSupply,
-        uint256 _martgageRate,
+        uint256 _mortgageRate,
         address _lendToken,
         address _borrowToken,
         address _spCoin,
@@ -361,7 +361,7 @@ contract PledgePool is ReentrancyGuard, SafeTransfer, multiSignatureClient {
                 maxSupply: _maxSupply,
                 lendSupply: 0,
                 borrowSupply: 0,
-                martgageRate: _martgageRate,
+                mortgageRate: _mortgageRate,
                 lendToken: _lendToken,
                 borrowToken: _borrowToken,
                 state: defaultChoice,
@@ -586,7 +586,7 @@ contract PledgePool is ReentrancyGuard, SafeTransfer, multiSignatureClient {
         // 总保证金价值 = 保证金数量 * 保证金价格
         uint256 totalValue = pool.borrowSupply.mul(prices[1]).div(calDecimal);
         // 转换成稳定币价值
-        uint256 actualValue = totalValue.mul(pool.martgageRate).div(baseDecimal);
+        uint256 actualValue = totalValue.mul(pool.mortgageRate).div(baseDecimal);
 
         if (pool.lendSupply > actualValue) {
           // 总借款>总借出
@@ -595,7 +595,7 @@ contract PledgePool is ReentrancyGuard, SafeTransfer, multiSignatureClient {
         } else {
           // 总借款<总借出
           data.settleAmountLend = pool.lendSupply;
-          data.settleAmountBorrow = pool.lendSupply.mul(pool.martgageRate).div(prices[1]).mul(baseDecimal).div(prices[0]);
+          data.settleAmountBorrow = pool.lendSupply.mul(pool.mortgageRate).div(prices[1]).mul(baseDecimal).div(prices[0]);
         }
         pool.state = PoolState.EXECUTION;
         emit StateChange(_pid, PoolState.MATCH, PoolState.EXECUTION);
