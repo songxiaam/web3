@@ -1,0 +1,38 @@
+type (
+    CreateOrderReq {
+        ProductId uint `json:"productId"`
+        Count uint `json:"count"`
+    }
+
+    CreateOrderRes {
+        OrderId uint `json:"orderId"`
+    }
+
+    GetOrderDetailReq {
+        OrderId uint `json:"orderId"`
+    }
+
+    GetOrderDetailRes {
+        OrderId uint `json:"orderId"`
+        ProductId uint `json:"productId"`
+        Count uint `json:"count"`
+    }
+)
+
+type (
+    CreateUserReq {
+        Name string `json:"name"`
+    }
+    CreateUserRes {
+        UserId uint `json:"userId"`
+    }
+
+    GetUserDetailReq {
+        UserId uint `form:"userId"`
+    }
+    GetUserDetailRes {
+        UserId uint `json:"userId"`
+        Name string `json:"name"`
+    }
+)
+

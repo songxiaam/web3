@@ -1,0 +1,11 @@
+Name: greet-api
+Host: 0.0.0.0
+Port: 8888
+
+DB:
+  DataSource: root:12345678@tcp(localhost:3307)/tables?charset=utf8mb4&parseTime=True&loc=Local
+
+Redis:
+  Host: "127.0.0.1:6379"
+  Password: ""
+  DB: 0  

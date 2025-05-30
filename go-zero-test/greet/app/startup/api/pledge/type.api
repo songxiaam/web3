@@ -1,0 +1,55 @@
+type (
+    GetTokenInfoReq {
+        Id uint64 `form:"id"`
+    }
+
+    GetTokenInfoRes {
+        Id uint64 `json:"id"`
+        Symbol string `json:"symbol"`
+        Logo string `json:"logo"`
+    }
+)
+
+type (
+    GetTokenInfoListReq {
+        StartIndex uint64 `form:"startIndex,optional"`
+        PageSize uint64 `form:"pageSize,optional"`
+    }
+
+    GetTokenInfoListRes {
+        List []TokenInfo `json:"list"`
+        Total uint64 `json:"total"`
+    }
+
+    TokenInfo {
+        Id uint64 `json:"id"`
+        Symbol string `json:"symbol"`
+        Logo string `json:"logo"`
+        Token string `json:"token"`
+        ChainId string `json:"chain_id"`
+        CustomCode uint64 `json:"customCode"`
+    }
+)
+
+type (
+    SearchReq {
+        GetTokenInfoListReq
+        Id uint64 `form:"id,optional"`
+        Symbol string `form:"symbol,optional"`
+        ChainId string `form:"chainId,optional"`
+    }
+
+    SearchRes {
+        List []TokenInfo `json:"list"`
+        Total uint64 `json:"total"`
+
+    }
+)
+
+type (
+    BaseResp {
+        Code int `json:"code"`
+        Msg string `json:"msg"`
+        Data interface{} `json:"data"`
+    }
+)

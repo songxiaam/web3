@@ -1,0 +1,21 @@
+syntax = "v1"
+
+import "type.api"
+
+@server(
+    prefix: /pledge
+    group: pledge
+)
+service greet {
+    @doc "获取token"
+    @handler getTokenInfo
+    get /detail (GetTokenInfoReq) returns (GetTokenInfoRes)
+
+    @doc "获取TokenList"
+    @handler getTokenInfoList
+    get /list (GetTokenInfoListReq) returns (BaseResp)
+
+    @doc "获取TokenList"
+    @handler search
+    get /search (SearchReq) returns (BaseResp)
+}
