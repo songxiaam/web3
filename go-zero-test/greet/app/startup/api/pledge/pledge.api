@@ -5,6 +5,7 @@ import "type.api"
 @server(
     prefix: /pledge
     group: pledge
+    middleware: TestMiddleware
 )
 service greet {
     @doc "获取token"

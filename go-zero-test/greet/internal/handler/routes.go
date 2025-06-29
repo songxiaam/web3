@@ -8,6 +8,7 @@ import (
 
 	order "greet/internal/handler/order"
 	pledge "greet/internal/handler/pledge"
+	poolBase "greet/internal/handler/poolBase"
 	user "greet/internal/handler/user"
 	"greet/internal/svc"
 
@@ -34,27 +35,42 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	)
 
 	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.TestMiddleware},
+			[]rest.Route{
+				{
+					// 获取token
+					Method:  http.MethodGet,
+					Path:    "/detail",
+					Handler: pledge.GetTokenInfoHandler(serverCtx),
+				},
+				{
+					// 获取TokenList
+					Method:  http.MethodGet,
+					Path:    "/list",
+					Handler: pledge.GetTokenInfoListHandler(serverCtx),
+				},
+				{
+					// 获取TokenList
+					Method:  http.MethodGet,
+					Path:    "/search",
+					Handler: pledge.SearchHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/pledge"),
+	)
+
+	server.AddRoutes(
 		[]rest.Route{
 			{
-				// 获取token
+				// 获取PoolBase
 				Method:  http.MethodGet,
-				Path:    "/detail",
-				Handler: pledge.GetTokenInfoHandler(serverCtx),
-			},
-			{
-				// 获取TokenList
-				Method:  http.MethodGet,
-				Path:    "/list",
-				Handler: pledge.GetTokenInfoListHandler(serverCtx),
-			},
-			{
-				// 获取TokenList
-				Method:  http.MethodGet,
-				Path:    "/search",
-				Handler: pledge.SearchHandler(serverCtx),
+				Path:    "/",
+				Handler: poolBase.GetPoolBaseHandler(serverCtx),
 			},
 		},
-		rest.WithPrefix("/pledge"),
+		rest.WithPrefix("/pool_base"),
 	)
 
 	server.AddRoutes(

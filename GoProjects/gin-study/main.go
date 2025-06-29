@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"gin-study/routers"
 	"gin-study/test"
@@ -14,11 +16,18 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
 func main() {
 	gin.ForceConsoleColor()
+	//gin.Default()
 	//fmt.Println("start....")
 	//database.InitDB()
 	//
@@ -48,7 +57,649 @@ func main() {
 	//testLetsEncrypt()
 	//testUpload()
 	//testSecret()
-	testLogFile()
+	//testLogFile()
+	//testNil()
+	//testChan()
+	//testGoroutine2()
+	//testContext()
+	//testType()
+	//testSelect()
+	//testPanic()
+	//testNew()
+	//testSlice()
+	//testPointer()
+	//testA()
+	//testMutex()
+	//testRWMutex()
+	//testWaitGroup()
+	//testSyncMap()
+	//testVar()
+	//testChannel()
+	//testChannelTimeout()
+	//testString()
+	//testJson()
+	//testError()
+	//testSyncPool()
+	//testChannel2()
+	//testChannel3()
+	testDtm()
+}
+
+func testDtm() {
+	go testRouter()
+	time.Sleep(1 * time.Second)
+	//dtm_demo.SubmitOrder()
+	select {}
+}
+
+func testChannel3() {
+	for i := 0; i < 10; i++ {
+		go func() {
+			time.Sleep(1 * time.Second)
+			return
+		}()
+	}
+	time.Sleep(3 * time.Second)
+
+	count := runtime.NumGoroutine()
+	fmt.Println(count)
+}
+
+func testChannel2() {
+	countChan := make(chan int) // 通道用于传递“加法请求”
+	done := make(chan struct{}) // 通道用于通知“加完了”
+	var result int
+
+	// 专门的 goroutine 负责对 result 累加（其他人不能直接改 result）
+	go func() {
+		for val := range countChan {
+			fmt.Println("1--->", val)
+			result += val
+			fmt.Println("2")
+		}
+		done <- struct{}{} // 通知 main：任务完成
+	}()
+
+	// 启动多个 goroutine 发起加法请求
+	for i := 0; i < 5; i++ {
+		go func(i int) {
+			fmt.Println("-0--->", i)
+			countChan <- 1 // 所有加法通过通道传递，避免竞争
+			fmt.Println("0--->", i)
+		}(i)
+	}
+
+	time.Sleep(100 * time.Millisecond) // 等待写入完成
+	close(countChan)                   // 关闭通道，表示不再写入
+	<-done                             // 等待加法协程完成
+	fmt.Println("Final counter:", result)
+}
+
+func testSyncPool() {
+	pool := sync.Pool{
+		New: func() interface{} {
+			return new(string)
+		},
+	}
+	s1 := pool.Get().(*string)
+	*s1 = "99"
+	fmt.Println(*s1)
+
+	pool.Put(s1)
+	s2 := pool.Get().(*string)
+	*s2 = "98"
+	fmt.Println(*s2)
+	//time.Sleep(1 * time.Second)
+	pool.Put(s1)
+	pool.Put(s2)
+	s3 := pool.Get().(*string)
+	fmt.Println(*s3)
+	s4 := pool.Get().(*string)
+	fmt.Println(*s4)
+	s5 := pool.Get().(*string)
+	fmt.Println(*s5)
+}
+
+func testError() {
+	err := errors.New("error message")
+	is := errors.Is(err, errors.New("error message"))
+	fmt.Println(is)
+	var notFound = errors.New("not found")
+
+	notFoundErr := fmt.Errorf("err:%w", errors.New("not found"))
+	is = errors.As(notFoundErr, &notFound)
+	fmt.Println(is)
+}
+
+type User struct {
+	Name  string `json:"name"`
+	Age   int    `json:"age"`
+	Email string `json:"email"`
+}
+
+func testJson() {
+	jsonStr := `{"name":"Alice","age":30,"email":"alice@example.com"}`
+	fmt.Println([]byte(jsonStr))
+	var user User
+	err := json.Unmarshal([]byte(jsonStr), &user)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(user.Name)
+
+	marshal, err := json.Marshal(user)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(marshal))
+}
+
+func testString() {
+
+	s := "hello world dsop sdp sdop"
+
+	n := strings.SplitN(s, "o", 5)
+	for _, v := range n {
+		fmt.Println(v)
+	}
+}
+
+func testChannelTimeout() {
+	var ch = make(chan int)
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+	LOOP:
+		for {
+			select {
+			case a, ok := <-ch:
+				fmt.Println("接收--->", a, ok)
+			case <-time.After(2 * time.Second):
+				fmt.Println("timeout")
+				break LOOP
+			}
+		}
+		fmt.Println("fun1 over")
+	}()
+
+	go func() {
+		defer wg.Done()
+		//defer close(ch)
+		for i := 0; i < 5; i++ {
+			fmt.Println("发送--->", i)
+			ch <- i
+			fmt.Println("发送成功--->", i)
+		}
+	}()
+	wg.Wait()
+	fmt.Println("end")
+}
+
+func testChannel() {
+	var ch = make(chan int)
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for {
+			fmt.Println("接收--->")
+			time.Sleep(100 * time.Millisecond)
+			a, ok := <-ch
+			fmt.Println("接收--->", a, ok)
+			if !ok {
+				break
+			}
+		}
+
+	}()
+
+	go func() {
+		defer wg.Done()
+		defer close(ch)
+		for i := 0; i < 5; i++ {
+			fmt.Println("发送--->", i)
+			ch <- i
+			fmt.Println("发送成功--->", i)
+		}
+	}()
+	wg.Wait()
+	fmt.Println("end")
+}
+
+func testVar() {
+	var i int
+	fmt.Println(i)
+	fmt.Println(&i)
+
+	// new return pointer
+	var j = new(int)
+	fmt.Println(j)
+	fmt.Println(reflect.TypeOf(j))
+	fmt.Println(&j)
+
+	var c = make(chan int, 2)
+	fmt.Println(c)
+	fmt.Println(reflect.TypeOf(c))
+	c <- 1
+	a, ok := <-c
+	fmt.Println(a, ok)
+	close(c)
+	a, ok = <-c
+
+	fmt.Println(a, ok)
+}
+
+func testSyncMap() {
+
+	var m map[any]int
+	m["a"] = 1
+	m[2] = 3
+	fmt.Println(m)
+
+	var sm sync.Map
+
+	var sw sync.WaitGroup
+	//var m map[int]int
+	for i := 0; i < 100; i++ {
+		sw.Add(1)
+		go func() {
+			defer sw.Done()
+
+			sm.LoadOrStore(i, i*i)
+			//m[i] = i * 1
+		}()
+	}
+	sw.Wait()
+	sm.LoadAndDelete(1)
+	//fmt.Println(sm.Range)
+	sm.Range(func(key, value interface{}) bool {
+		fmt.Println(key, value)
+		return true
+	})
+}
+
+func testWaitGroup() {
+	var wg sync.WaitGroup
+	//wg.Add(10)
+	fmt.Println("testWaitGroup start", time.Now().Format(time.DateTime))
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			fmt.Println("--->", i, "func1 get lock at ", time.Now().Format("2006-01-02 15:04:05"))
+			time.Sleep(500 * time.Millisecond)
+			fmt.Println("--->", i, "func1 release lock at ", time.Now().Format("2006-01-02 15:04:05"))
+		}(i)
+	}
+	wg.Wait()
+	fmt.Println("testWaitGroup end", time.Now().Format(time.DateTime))
+}
+
+func testRWMutex() {
+	var lock sync.RWMutex
+	fmt.Println("testMutex start")
+	for i := 0; i < 10; i++ {
+		go func(i int) {
+			defer lock.RUnlock()
+			lock.RLock()
+			fmt.Println("--->", i, "func1 get lock at ", time.Now().Format("2006-01-02 15:04:05"))
+			time.Sleep(500 * time.Millisecond)
+			fmt.Println("--->", i, "func1 release lock at ", time.Now().Format("2006-01-02 15:04:05"))
+		}(i)
+	}
+
+	time.Sleep(10 * time.Second)
+}
+
+func testMutex() {
+	var lock sync.Mutex
+	defer fmt.Println("testMutex over")
+	go func() {
+		defer func() {
+			lock.Unlock()
+			fmt.Println("func1  unlock at ", time.Now().Format("2006-01-02 15:04:05"))
+		}()
+		lock.Lock()
+		fmt.Println("func1 get lock at ", time.Now().Format("2006-01-02 15:04:05"))
+		time.Sleep(1 * time.Second)
+		fmt.Println("func1 release lock at ", time.Now().Format("2006-01-02 15:04:05"))
+	}()
+	time.Sleep(100 * time.Millisecond)
+	go func() {
+		defer func() {
+			lock.Unlock()
+			fmt.Println("func2  unlock at ", time.Now().Format("2006-01-02 15:04:05"))
+		}()
+		lock.Lock()
+		fmt.Println("func2 get lock at ", time.Now().Format("2006-01-02 15:04:05"))
+		time.Sleep(1 * time.Second)
+		fmt.Println("func2 release lock at ", time.Now().Format("2006-01-02 15:04:05"))
+	}()
+	time.Sleep(3.0 * time.Second)
+	fmt.Println("over")
+}
+
+func testA() {
+	a := 1
+	var ai atomic.Uint32
+	ai.Store(32)
+	fmt.Println(ai.Load())
+
+	ai.Swap(23)
+	fmt.Println("-----")
+	fmt.Println(ai.Load())
+	old := ai.Add(^uint32(12) + 1)
+	fmt.Println(old)
+	fmt.Println(ai.Load())
+	fmt.Println("-----")
+
+	ok := ai.CompareAndSwap(23, 1000)
+	fmt.Println(ok)
+	fmt.Println(ai.Load())
+
+	for i := 0; i < 10; i++ {
+		go func() {
+
+			b := a
+			time.Sleep(1 * time.Second)
+			a = b + 1
+		}()
+	}
+	time.Sleep(time.Second)
+	fmt.Println(a)
+
+	var b int32
+	atomic.StoreInt32(&b, 123)
+	fmt.Println(b)
+
+}
+
+var once sync.Once
+
+func testOnce() {
+	once.Do(func() {
+
+	})
+}
+
+func testSyncMutex() {
+	//var mu sync.Mutex
+	//var wg sync.WaitGroup
+	//var m sync.Map
+}
+
+func testOS() {
+
+}
+
+func testPointer() {
+	var p *int
+	a := 1
+	p = &a
+	fmt.Println(*p)
+
+	var p2 unsafe.Pointer
+	p2 = unsafe.Pointer(&a)
+	fmt.Println(*(*int)(p2))
+
+}
+
+func testSlice() {
+	arr := [5]int{1, 2, 3, 4, 5}
+	s := arr[2:3]
+	fmt.Println(s)
+	s1 := append(s, 6)
+	fmt.Println(s1)
+	fmt.Println(arr)
+}
+
+func testNew() {
+	ch := new(chan int)
+	fmt.Println(ch)
+
+	i := new(int)
+	fmt.Println(i)
+	fmt.Println(*i)
+
+}
+
+func testPanic() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+	willPanic()
+
+}
+
+func willPanic() {
+	defer func() {
+		fmt.Println("willPanic painc")
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in willPanic ", r)
+		}
+	}()
+	fmt.Println("willPanic")
+	panic("出错啦啦")
+	fmt.Println("willPanic2")
+}
+
+func testSelect() {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	jobs := make(chan int, 5)
+	results := make(chan int, 5)
+	fmt.Println("start")
+	go func() {
+		for {
+			//time.Sleep(time.Second * 2)
+			select {
+			case val := <-jobs:
+				fmt.Println("case1 ", val)
+			case results <- 1:
+				fmt.Println("case2")
+			case <-ctx.Done():
+				fmt.Println("testSelect Done")
+				return
+			case <-time.After(1 * time.Second):
+				fmt.Println("case3 return")
+				//return
+				//default:
+				//	fmt.Println("default")
+				//	time.Sleep(time.Second * 1)
+			}
+		}
+	}()
+	cancel()
+	time.Sleep(2 * time.Second)
+	for i := 0; i < 3; i++ {
+		jobs <- i
+	}
+	time.Sleep(2 * time.Second)
+}
+
+type stypeA string
+type stypeB string
+
+func testType() {
+	var k1 stypeA = "123"
+	var k2 stypeB = "123"
+	fmt.Println(k1, k2)
+	fmt.Println(reflect.TypeOf(k1), reflect.TypeOf(k2))
+}
+
+func testContext() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+
+	context.WithCancel(context.Background())
+	ctx1 := context.WithValue(ctx, "key", "value")
+	ctx2 := context.WithValue(ctx1, "key", "value2")
+	ctx3 := context.WithValue(ctx2, "key", "value3")
+	ctx4 := context.WithValue(ctx3, "key", "value4")
+
+	v := ctx4.Value("key")
+	fmt.Println(v)
+	v = ctx3.Value("key")
+	fmt.Println(v)
+	v = ctx2.Value("key")
+	fmt.Println(v)
+	v = ctx1.Value("key")
+	fmt.Println(v)
+
+	//defer cancel()
+	//done := ctx.Done()
+	//fmt.Println(done)
+
+	s := make(chan struct{})
+
+	go func() {
+		s <- struct{}{}
+	}()
+	s1 := <-s
+	fmt.Println(s1)
+
+	go func(ctx context.Context) {
+		select {
+		case <-ctx.Done(): // 监听 context 的 Done 通道
+			fmt.Println("Goroutine cancelled:", ctx.Err())
+		}
+	}(ctx)
+
+	cancel()
+	time.Sleep(time.Second)
+
+}
+
+func testGoroutine2() {
+	ctx, cancel := context.WithCancel(context.Background())
+	jobs := make(chan int)
+	go worker2(ctx, jobs)
+
+	jobs <- 1
+	jobs <- 2
+	jobs <- 3
+
+	cancel()
+	close(jobs)
+
+	time.Sleep(1 * time.Second)
+}
+
+func worker2(ctx context.Context, jobs <-chan int) {
+	for {
+		select {
+		case job, ok := <-jobs:
+			if !ok {
+				fmt.Println("jobs channel closed, exiting")
+				return
+			}
+			fmt.Println("Processing job", job)
+		case <-ctx.Done():
+			fmt.Println("Received cancel signal, exiting")
+			return
+		}
+	}
+}
+
+func testChan2() {
+	jobs := make(chan int)    // 无缓冲通道
+	results := make(chan int) // 无缓冲通道
+
+	// 启动三个 worker
+	for w := 1; w <= 3; w++ {
+		go worker(w, jobs, results)
+	}
+
+	fmt.Println("before send")
+
+	// 向 jobs 通道发送任务
+	go func() {
+		for j := 1; j <= 5; j++ {
+			fmt.Printf("Sending job %d\n", j)
+			jobs <- j // 发送时会阻塞，直到有 worker 接收
+		}
+		close(jobs) // 关闭任务通道，告知 worker 没有新任务了
+		fmt.Println("close jobs")
+	}()
+
+	// 收集结果
+	for a := 1; a <= 5; a++ {
+		fmt.Printf("Result: %d\n", <-results)
+	}
+}
+
+func testChan() {
+	jobs := make(chan int, 4)
+	results := make(chan int, 4)
+
+	for w := 1; w <= 4; w++ {
+		go worker(w, jobs, results)
+	}
+	fmt.Println("before send")
+	for j := 1; j <= 11; j++ {
+		jobs <- j
+		//fmt.Println(<-results)
+	}
+	fmt.Println("before close")
+	close(jobs)
+	v, ok := <-jobs
+	fmt.Println(v, ok)
+	fmt.Println("close")
+	time.Sleep(time.Millisecond * 10000)
+	//for a := 1; a <= 2; a++ {
+	//	fmt.Println(<-results)
+	//}
+}
+
+func worker(id int, jobs <-chan int, results chan<- int) {
+	fmt.Printf("----> Worker %d started\n", id)
+	for job := range jobs {
+		fmt.Printf("Worker %d processing job %d\n", id, job)
+		results <- job * 2
+		fmt.Printf("Worker %d send %d\n", id, job)
+	}
+}
+
+func testNil() {
+	//var a, b interface{} = nil, nil
+	//fmt.Println(a == b)
+	//
+	//var c *[]int = nil
+	//var d interface{} = nil
+	//fmt.Println(c == d)
+	//
+	//const name = "123"
+
+	m := map[string]int{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+	}
+
+	for k := range m {
+		fmt.Println(k)
+		if k == "c" {
+			delete(m, k)
+			m["d"] = 998
+		}
+	}
+	fmt.Println(m)
+
+	ch := make(chan int)
+
+	go func() {
+		ch <- 2
+	}()
+
+	go func() {
+		ch <- 1
+	}()
+
+	//val := <-ch
+	fmt.Println(<-ch)
+	fmt.Println(<-ch)
 }
 
 func testBindCustomStruct() {
@@ -341,7 +992,10 @@ func testLogFile() {
 	router.Run(":8080")
 }
 
-func testTest() {
+func testRouter() {
 	router := routers.SetupRouter()
-	router.Run(":8080")
+	err := router.Run(":8888")
+	if err != nil {
+		return
+	}
 }

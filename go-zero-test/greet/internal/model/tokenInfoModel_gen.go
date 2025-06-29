@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/stores/builder"
+	"github.com/zeromicro/go-zero/core/stores/cache"
+	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/core/stringx"
 )
@@ -20,6 +22,8 @@ var (
 	tokenInfoRows                = strings.Join(tokenInfoFieldNames, ",")
 	tokenInfoRowsExpectAutoSet   = strings.Join(stringx.Remove(tokenInfoFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
 	tokenInfoRowsWithPlaceHolder = strings.Join(stringx.Remove(tokenInfoFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+
+	cacheTablesTokenInfoIdPrefix = "cache:tables:tokenInfo:id:"
 )
 
 type (
@@ -28,13 +32,10 @@ type (
 		FindOne(ctx context.Context, id uint64) (*TokenInfo, error)
 		Update(ctx context.Context, data *TokenInfo) error
 		Delete(ctx context.Context, id uint64) error
-		FindList(ctx context.Context, startIndex, pageSize uint64) ([]TokenInfo, error)
-		TotalCount(ctx context.Context) (uint64, error)
-		Search(ctx context.Context, id uint64, symbol, chainId string, startIndex, pageSize uint64) ([]TokenInfo, error)
 	}
 
 	defaultTokenInfoModel struct {
-		conn  sqlx.SqlConn
+		sqlc.CachedConn
 		table string
 	}
 
@@ -49,30 +50,37 @@ type (
 		CreatedAt    sql.NullTime   `db:"created_at"`
 		UpdatedAt    sql.NullTime   `db:"updated_at"`
 		Decimals     int64          `db:"decimals"`
+		Desc         sql.NullString `db:"desc"`
 	}
 )
 
-func newTokenInfoModel(conn sqlx.SqlConn) *defaultTokenInfoModel {
+func newTokenInfoModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Option) *defaultTokenInfoModel {
 	return &defaultTokenInfoModel{
-		conn:  conn,
-		table: "`token_info`",
+		CachedConn: sqlc.NewConn(conn, c, opts...),
+		table:      "`token_info`",
 	}
 }
 
 func (m *defaultTokenInfoModel) Delete(ctx context.Context, id uint64) error {
-	query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
-	_, err := m.conn.ExecCtx(ctx, query, id)
+	tablesTokenInfoIdKey := fmt.Sprintf("%s%v", cacheTablesTokenInfoIdPrefix, id)
+	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+		query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
+		return conn.ExecCtx(ctx, query, id)
+	}, tablesTokenInfoIdKey)
 	return err
 }
 
 func (m *defaultTokenInfoModel) FindOne(ctx context.Context, id uint64) (*TokenInfo, error) {
-	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", tokenInfoRows, m.table)
+	tablesTokenInfoIdKey := fmt.Sprintf("%s%v", cacheTablesTokenInfoIdPrefix, id)
 	var resp TokenInfo
-	err := m.conn.QueryRowCtx(ctx, &resp, query, id)
+	err := m.QueryRowCtx(ctx, &resp, tablesTokenInfoIdKey, func(ctx context.Context, conn sqlx.SqlConn, v any) error {
+		query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", tokenInfoRows, m.table)
+		return conn.QueryRowCtx(ctx, v, query, id)
+	})
 	switch err {
 	case nil:
 		return &resp, nil
-	case sqlx.ErrNotFound:
+	case sqlc.ErrNotFound:
 		return nil, ErrNotFound
 	default:
 		return nil, err
@@ -80,18 +88,32 @@ func (m *defaultTokenInfoModel) FindOne(ctx context.Context, id uint64) (*TokenI
 }
 
 func (m *defaultTokenInfoModel) Insert(ctx context.Context, data *TokenInfo) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?)", m.table, tokenInfoRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Symbol, data.Logo, data.Price, data.Token, data.ChainId, data.AbiFileExist, data.Decimals)
+	tablesTokenInfoIdKey := fmt.Sprintf("%s%v", cacheTablesTokenInfoIdPrefix, data.Id)
+	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, tokenInfoRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.Symbol, data.Logo, data.Price, data.Token, data.ChainId, data.AbiFileExist, data.Decimals, data.Desc)
+	}, tablesTokenInfoIdKey)
 	return ret, err
 }
 
 func (m *defaultTokenInfoModel) Update(ctx context.Context, data *TokenInfo) error {
-	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, tokenInfoRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.Symbol, data.Logo, data.Price, data.Token, data.ChainId, data.AbiFileExist, data.Decimals, data.Id)
+	tablesTokenInfoIdKey := fmt.Sprintf("%s%v", cacheTablesTokenInfoIdPrefix, data.Id)
+	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, tokenInfoRowsWithPlaceHolder)
+		return conn.ExecCtx(ctx, query, data.Symbol, data.Logo, data.Price, data.Token, data.ChainId, data.AbiFileExist, data.Decimals, data.Desc, data.Id)
+	}, tablesTokenInfoIdKey)
 	return err
+}
+
+func (m *defaultTokenInfoModel) formatPrimary(primary any) string {
+	return fmt.Sprintf("%s%v", cacheTablesTokenInfoIdPrefix, primary)
+}
+
+func (m *defaultTokenInfoModel) queryPrimary(ctx context.Context, conn sqlx.SqlConn, v, primary any) error {
+	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", tokenInfoRows, m.table)
+	return conn.QueryRowCtx(ctx, v, query, primary)
 }
 
 func (m *defaultTokenInfoModel) tableName() string {
 	return m.table
 }
-

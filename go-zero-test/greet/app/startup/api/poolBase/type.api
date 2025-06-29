@@ -1,0 +1,18 @@
+type (
+    GetPoolBaseReq {
+        Id int64 `form:"id"`
+    }
+
+    GetPoolBaseRes {
+        PoolBase PoolBase `json:"poolBase"`
+    }
+)
+
+type (
+    PoolBase {
+        Id int64  `json:"id"`
+        ChainId string `json:"chainId"`
+        LendTokenSymbol string `json:"lendTokenSymbol"`
+        BorrowTokenSymbol string `json:"borrowTokenSymbol"`
+    }
+)

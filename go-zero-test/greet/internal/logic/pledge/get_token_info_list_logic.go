@@ -2,6 +2,7 @@ package pledge
 
 import (
 	"context"
+	"greet/internal/model"
 
 	"greet/internal/svc"
 	"greet/internal/types"
@@ -24,15 +25,21 @@ func NewGetTokenInfoListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *GetTokenInfoListLogic) GetTokenInfoList(req *types.GetTokenInfoListReq) (resp *types.BaseResp, err error) {
+func (l *GetTokenInfoListLogic) GetTokenInfoList(req *types.GetTokenInfoListReq) (*types.BaseResp, error) {
 	// todo: add your logic here and delete this line
-
-	list, err := l.svcCtx.TokenInfoModel.FindList(l.ctx, req.StartIndex, req.PageSize)
+	logx.Info("GetTokenInfoList")
+	logx.Error("logx.error")
+	logx.Info("req: %v", req)
+	var list []model.TokenInfo
+	err := l.svcCtx.TokenInfoModel.FindList(l.ctx, req.StartIndex, req.PageSize, &list)
 	if err != nil {
 		return nil, err
 	}
-	count, err := l.svcCtx.TokenInfoModel.TotalCount(l.ctx)
-
+	var count uint64
+	err = l.svcCtx.TokenInfoModel.TotalCount(l.ctx, 0, "", "", &count)
+	if err != nil {
+		return nil, err
+	}
 	respList := make([]types.TokenInfo, 0, len(list))
 	for i, m := range list {
 		tokenInfo := types.TokenInfo{

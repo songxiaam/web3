@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/redis/go-redis/v9"
+	"greet/common/middleware"
+	"time"
 
 	"greet/internal/config"
 	"greet/internal/handler"
@@ -26,6 +29,12 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
 
+	server.Use(middleware.NewAuthMiddleware().Handle)
+	server.Use(middleware.NewRequestMiddleware().Handle)
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
+
+	ticker := time.NewTicker(1 * time.Second)
+	rdb := redis.NewClient(&redis.Options{})
+	rdb.ZRangeByScore()
 }

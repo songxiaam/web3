@@ -2,7 +2,8 @@ package model
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
@@ -13,7 +14,9 @@ type (
 	// and implement the added methods in customTokenInfoModel.
 	TokenInfoModel interface {
 		tokenInfoModel
-		withSession(session sqlx.Session) TokenInfoModel
+		Search(ctx context.Context, id uint64, symbol, chainId string, startIndex, pageSize uint64, resp []TokenInfo) error
+		FindList(ctx context.Context, startIndex, pageSize uint64, resp *[]TokenInfo) error
+		TotalCount(ctx context.Context, id uint64, symbol, chainId string, count *uint64) error
 	}
 
 	customTokenInfoModel struct {
@@ -22,45 +25,13 @@ type (
 )
 
 // NewTokenInfoModel returns a model for the database table.
-func NewTokenInfoModel(conn sqlx.SqlConn) TokenInfoModel {
+func NewTokenInfoModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Option) TokenInfoModel {
 	return &customTokenInfoModel{
-		defaultTokenInfoModel: newTokenInfoModel(conn),
+		defaultTokenInfoModel: newTokenInfoModel(conn, c, opts...),
 	}
 }
 
-func (m *customTokenInfoModel) withSession(session sqlx.Session) TokenInfoModel {
-	return NewTokenInfoModel(sqlx.NewSqlConnFromSession(session))
-}
-
-func (m *customTokenInfoModel) FindList(ctx context.Context, startIndex, pageSize uint64) ([]TokenInfo, error) {
-	query := fmt.Sprintf("select %s from %s order by id limit ?, ?", tokenInfoRows, m.table)
-	var resp []TokenInfo
-	err := m.conn.QueryRowsCtx(ctx, &resp, query, startIndex, pageSize)
-	switch err {
-	case nil:
-		return resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
-		return nil, err
-	}
-}
-
-func (m *defaultTokenInfoModel) TotalCount(ctx context.Context) (uint64, error) {
-	query := fmt.Sprintf("select count(*) as count from %s", m.table)
-	var count uint64
-	err := m.conn.QueryRowCtx(ctx, &count, query)
-	switch err {
-	case nil:
-		return count, nil
-	case sqlx.ErrNotFound:
-		return 0, ErrNotFound
-	default:
-		return 0, err
-	}
-}
-
-func (m *defaultTokenInfoModel) Search(ctx context.Context, id uint64, symbol, chainId string, startIndex, pageSize uint64) ([]TokenInfo, error) {
+func (m *customTokenInfoModel) Search(ctx context.Context, id uint64, symbol, chainId string, startIndex, pageSize uint64, resp []TokenInfo) error {
 	query := "SELECT * FROM " + m.table + " WHERE 1=1"
 	var args []interface{}
 	if id != 0 {
@@ -83,14 +54,48 @@ func (m *defaultTokenInfoModel) Search(ctx context.Context, id uint64, symbol, c
 		args = append(args, startIndex, pageSize)
 	}
 
-	var resp []TokenInfo
-	err := m.conn.QueryRowsCtx(ctx, &resp, query, args...)
-	switch err {
-	case nil:
-		return resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
+	//var resp []TokenInfo
+	err := m.QueryRowsNoCacheCtx(ctx, &resp, query, args...)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, sqlx.ErrNotFound):
+		return ErrNotFound
 	default:
-		return nil, err
+		return nil
 	}
+}
+
+func (m *customTokenInfoModel) FindList(ctx context.Context, startIndex, pageSize uint64, resp *[]TokenInfo) error {
+	query := "SELECT * FROM " + m.table + " order by id desc limit ?,?"
+	err := m.QueryRowsNoCacheCtx(ctx, resp, query, startIndex, pageSize)
+	if err != nil {
+		if errors.Is(err, sqlx.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
+}
+
+func (m *customTokenInfoModel) TotalCount(ctx context.Context, id uint64, symbol, chainId string, count *uint64) error {
+	query := "SELECT COUNT(*) FROM " + m.table + " WHERE 1=1"
+	var args []interface{}
+	if id != 0 {
+		query += " and id = ?"
+		args = append(args, id)
+	}
+	if symbol != "" {
+		query += " and symbol = ?"
+		args = append(args, symbol)
+	}
+	if chainId != "" {
+		query += " and chain_id = ?"
+		args = append(args, chainId)
+	}
+	err := m.QueryRowNoCacheCtx(ctx, count, query, args...)
+	if err != nil {
+		return err
+	}
+	return nil
 }

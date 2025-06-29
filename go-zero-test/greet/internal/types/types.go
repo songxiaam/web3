@@ -8,6 +8,13 @@ type GetTokenInfoListRes struct {
 	Total uint64      `json:"total"`
 }
 
+type PoolBase struct {
+	Id                int64  `json:"id"`
+	ChainId           string `json:"chainId"`
+	LendTokenSymbol   string `json:"lendTokenSymbol"`
+	BorrowTokenSymbol string `json:"borrowTokenSymbol"`
+}
+
 type SearchRes struct {
 	List  []TokenInfo `json:"list"`
 	Total uint64      `json:"total"`

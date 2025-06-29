@@ -3,7 +3,7 @@
 # 表名
 tables=$2
 # 目录
-modeldir=./internal/model
+modeldir=./internal/Model
 # 数据库配置
 host=127.0.0.1
 port=3307

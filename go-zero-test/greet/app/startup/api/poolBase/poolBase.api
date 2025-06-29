@@ -1,0 +1,13 @@
+syntax = "v1"
+
+import "type.api"
+
+@server(
+    prefix: /pool_base
+    group: poolBase
+)
+service greet {
+    @doc "获取PoolBase"
+    @handler getPoolBase
+    get / (GetPoolBaseReq) returns (GetPoolBaseRes)
+}

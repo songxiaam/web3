@@ -11,6 +11,6 @@ func InitUserRoutes(r *gin.Engine) {
 		userGroup.GET("/login", controllers.User.LoginAccount)
 		userGroup.GET("/ping", controllers.User.UserPing)
 		userGroup.POST("/get", controllers.User.GetUserInfo)
-
+		userGroup.GET("test_order", controllers.Order.TestOrder)
 	}
 }

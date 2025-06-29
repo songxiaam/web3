@@ -2,6 +2,7 @@ package pledge
 
 import (
 	"context"
+	"greet/internal/model"
 	"greet/internal/pkg/response"
 
 	"greet/internal/svc"
@@ -25,13 +26,16 @@ func NewSearchLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SearchLogi
 	}
 }
 
-func (l *SearchLogic) Search(req *types.SearchReq) (resp *response.BaseResp[*types.SearchRes], err error) {
+func (l *SearchLogic) Search(req *types.SearchReq) (*response.BaseResp[*types.SearchRes], error) {
 	// todo: add your logic here and delete this line
-	list, err := l.svcCtx.TokenInfoModel.Search(l.ctx, req.Id, req.Symbol, req.ChainId, req.StartIndex, req.PageSize)
+	var list []model.TokenInfo
+	err := l.svcCtx.TokenInfoModel.Search(l.ctx, req.Id, req.Symbol, req.ChainId, req.StartIndex, req.PageSize, list)
 	if err != nil {
 		return nil, err
 	}
-	count, err := l.svcCtx.TokenInfoModel.TotalCount(l.ctx)
+
+	var count uint64
+	err = l.svcCtx.TokenInfoModel.TotalCount(l.ctx, req.Id, req.Symbol, req.ChainId, &count)
 
 	respList := make([]types.TokenInfo, 0, len(list))
 	for i, m := range list {
