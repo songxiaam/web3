@@ -23,11 +23,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-	"smart-route/internal/config"
-	"smart-route/pkg/api"
-
-	_ "smart-route/docs" // swagger docs
+	"smart-route/internal/router"
+	"smart-route/pkg/config"
 )
 
 // @Summary 启动服务
@@ -50,7 +47,7 @@ func main() {
 		port = fmt.Sprintf("%d", cfg.Server.Port)
 	}
 
-	r := api.NewRouter(cfg)
+	r := router.NewRouter(cfg)
 	fmt.Printf("Starting smart-route backend (gin) on :%s...\n", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("server failed: %v", err)

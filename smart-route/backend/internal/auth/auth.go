@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"time"
 
-	"smart-route/internal/config"
+	"smart-route/pkg/config"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gin-gonic/gin"
