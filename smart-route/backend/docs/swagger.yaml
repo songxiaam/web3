@@ -1,0 +1,134 @@
+basePath: /
+definitions:
+  api.ErrorResponse:
+    properties:
+      error:
+        example: Invalid signature
+        type: string
+    type: object
+  api.ProfileResponse:
+    properties:
+      address:
+        example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
+        type: string
+      message:
+        example: Profile retrieved successfully
+        type: string
+    type: object
+  api.WalletLoginRequest:
+    properties:
+      address:
+        example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
+        type: string
+      message:
+        example: Login to Smart Route
+        type: string
+      signature:
+        example: 0x1234567890abcdef...
+        type: string
+    required:
+    - address
+    - message
+    - signature
+    type: object
+  api.WalletLoginResponse:
+    properties:
+      address:
+        example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: 聚合器+最优路径项目的 Go 后端 API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Smart Route API
+  version: "1.0"
+paths:
+  /api/profile:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户的信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户信息
+          schema:
+            $ref: '#/definitions/api.ProfileResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取用户信息
+      tags:
+      - profile
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 使用钱包签名进行登录
+      parameters:
+      - description: 登录请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.WalletLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            $ref: '#/definitions/api.WalletLoginResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: 签名验证失败
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: 钱包登录
+      tags:
+      - auth
+  /auth/nonce:
+    get:
+      consumes:
+      - application/json
+      description: 获取用于钱包签名的随机 nonce
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回随机 nonce
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取随机 nonce
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
