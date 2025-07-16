@@ -3,7 +3,10 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"smart-route/pkg/data/entity"
 	"time"
+
+	"gorm.io/gorm"
 
 	"smart-route/pkg/config"
 
@@ -12,30 +15,37 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type JwtAuth struct {
+	config *config.Config
+	db     *gorm.DB
+}
+
+func NewJwtAuth(cfg *config.Config, db *gorm.DB) *JwtAuth {
+	return &JwtAuth{
+		config: cfg,
+		db:     db,
+	}
+}
+
 type Claims struct {
 	Address string `json:"address"`
 	jwt.RegisteredClaims
 }
 
-type AuthService struct {
-	config *config.Config
-}
-
-func NewAuthService(cfg *config.Config) *AuthService {
-	return &AuthService{
-		config: cfg,
-	}
+type AdminClaims struct {
+	UserId string `json:"userId"`
+	jwt.RegisteredClaims
 }
 
 // GenerateNonce 生成随机 nonce
-func (a *AuthService) GenerateNonce() string {
+func (a *JwtAuth) GenerateNonce() string {
 	bytes := make([]byte, 32)
 	rand.Read(bytes)
 	return hex.EncodeToString(bytes)
 }
 
 // VerifySignature 验证钱包签名
-func (a *AuthService) VerifySignature(address, message, signature string) bool {
+func (a *JwtAuth) VerifySignature(address, message, signature string) bool {
 	// 解码签名
 	sig, err := hex.DecodeString(signature[2:]) // 移除 0x 前缀
 	if err != nil {
@@ -60,7 +70,7 @@ func (a *AuthService) VerifySignature(address, message, signature string) bool {
 }
 
 // GenerateToken 生成 JWT token
-func (a *AuthService) GenerateToken(address string) (string, error) {
+func (a *JwtAuth) GenerateToken(userId, address string) (string, error) {
 	claims := Claims{
 		Address: address,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -74,7 +84,7 @@ func (a *AuthService) GenerateToken(address string) (string, error) {
 }
 
 // AuthMiddleware JWT 鉴权中间件
-func (a *AuthService) AuthMiddleware() gin.HandlerFunc {
+func (a *JwtAuth) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
@@ -102,6 +112,58 @@ func (a *AuthService) AuthMiddleware() gin.HandlerFunc {
 			c.Set("address", claims.Address)
 		}
 
+		c.Next()
+	}
+}
+
+// GenerateTokenAdmin 生成 JWT token
+func (a *JwtAuth) GenerateTokenAdmin(userId string) (string, error) {
+	claims := AdminClaims{
+		UserId: userId,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(a.config.JWT.ExpiresHours) * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(a.config.JWT.Secret))
+}
+
+// AdminAuthMiddleware 管理员用户名密码鉴权中间件
+func (a *JwtAuth) AdminAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var login struct {
+			Username string `json:"username" binding:"required"`
+			Password string `json:"password" binding:"required"`
+		}
+
+		if err := c.ShouldBindJSON(&login); err != nil {
+			c.JSON(400, gin.H{"error": "Username and password required"})
+			c.Abort()
+			return
+		}
+		var adminUser entity.Admin
+		if err := a.db.Where("username = ?", login.Username).First(&adminUser).Error; err != nil {
+			c.JSON(401, gin.H{"error": "Admin user not found"})
+			c.Abort()
+			return
+		}
+		if adminUser.Password != login.Password {
+			c.JSON(401, gin.H{"error": "Invalid admin credentials"})
+			c.Abort()
+			return
+		}
+
+		// 假设管理员用户名和密码存储在配置中
+		if login.Username != adminUser.Username || login.Password != adminUser.Password {
+			c.JSON(401, gin.H{"error": "Invalid admin credentials"})
+			c.Abort()
+			return
+		}
+
+		// 认证通过，设置管理员标识
+		c.Set("is_admin", true)
 		c.Next()
 	}
 }
