@@ -18,7 +18,7 @@ contract PledgePool is ReentrancyGuard, SafeTransfer, multiSignatureClient {
     uint256 constant baseYear = 365 days;
 
     enum PoolState {
-        MATCH,
+        MATCH, //撮合中
         EXECUTION,
         FINISH,
         LIQUIDATION,

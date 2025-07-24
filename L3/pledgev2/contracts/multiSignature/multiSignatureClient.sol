@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+/**
+这是一个多签名合约的客户端基类，主要用于为其他合约提供多签名校验功能。
+通过修饰器 validCall，可以让合约的关键操作必须经过多签名合约的验证，提升安全性。
+适用于需要多方共同管理和授权的场景。
+ */
+
 interface IMultiSignature {
   function getValidSignature(bytes32 msghash, uint256 lastIndex) external view returns (uint256);
 }

@@ -8,12 +8,12 @@ import (
 
 // GetAdminByUsername 根据用户名查找管理员
 func GetAdminByUsername(ctx context.Context, db *gorm.DB, username string) (*entity.Admin, error) {
-	var admin *entity.Admin
-	err := db.WithContext(ctx).Where("username = ?", username).First(admin).Error
+	var admin entity.Admin
+	err := db.WithContext(ctx).Where("username = ?", username).First(&admin).Error
 	if err != nil {
 		return nil, err
 	}
-	return admin, nil
+	return &admin, nil
 }
 
 // GetAdminByUsernameAndPassword 根据用户名和密码查找管理员

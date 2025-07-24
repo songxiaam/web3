@@ -35,7 +35,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null
     if (!token && router.pathname !== '/login') {
-      router.replace('/login')
+      // router.replace('/login')
     }
     if (token && router.pathname === '/login') {
       router.replace('/')

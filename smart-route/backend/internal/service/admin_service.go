@@ -69,7 +69,7 @@ func (s *AdminService) CheckAdmin(ctx context.Context, username, password string
 	}
 	// 这里可生成 JWT
 	//token, err := h.jtwAuth.GenerateTokenAdmin(adminModel.ID.String())
-	var admin *model.Admin
-	convert.CopyStructFields(admin, adminEntity)
-	return admin, nil
+	admin := model.Admin{}
+	convert.CopyStructFields(&admin, adminEntity)
+	return &admin, nil
 }

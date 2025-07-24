@@ -21,6 +21,7 @@ const navigation = [
   { name: '用户管理', href: '/users', icon: UserGroupIcon },
   { name: '交易记录', href: '/transactions', icon: CurrencyDollarIcon },
   { name: '合约管理', href: '/contracts', icon: ShieldCheckIcon },
+  { name: '代币管理', href: '/tokens', icon: CurrencyDollarIcon },
   { name: '系统设置', href: '/settings', icon: CogIcon },
 ]
 

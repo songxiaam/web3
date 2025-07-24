@@ -12,6 +12,6 @@ type Admin struct {
 	Role      string    `json:"role"`
 	Status    int       `json:"status"` // 1: 启用, 0: 禁用
 	Group     string    `json:"group"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
