@@ -44,21 +44,21 @@ const docTemplate = `{
                 "summary": "获取用户信息",
                 "responses": {
                     "200": {
-                        "description": "用户信息",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ProfileResponse"
+                            "$ref": "#/definitions/dto.ProfileResponse"
                         }
                     },
                     "401": {
-                        "description": "未授权",
+                        "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/auth/login": {
+        "/login": {
             "post": {
                 "description": "使用钱包签名进行登录",
                 "consumes": [
@@ -70,7 +70,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "钱包登录",
+                "summary": "用户登录",
                 "parameters": [
                     {
                         "description": "登录请求参数",
@@ -78,57 +78,27 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.WalletLoginRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "登录成功",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.WalletLoginResponse"
+                            "$ref": "#/definitions/dto.LoginResponse"
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "签名验证失败",
+                        "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/nonce": {
-            "get": {
-                "description": "获取用于钱包签名的随机 nonce",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "获取随机 nonce",
-                "responses": {
-                    "200": {
-                        "description": "返回随机 nonce",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -136,7 +106,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.ErrorResponse": {
+        "dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -145,20 +115,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ProfileResponse": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "example": "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Profile retrieved successfully"
-                }
-            }
-        },
-        "api.WalletLoginRequest": {
+        "dto.LoginRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -180,7 +137,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.WalletLoginResponse": {
+        "dto.LoginResponse": {
             "type": "object",
             "properties": {
                 "address": {
@@ -190,6 +147,19 @@ const docTemplate = `{
                 "token": {
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "dto.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Profile retrieved successfully"
                 }
             }
         }

@@ -1,21 +1,12 @@
 basePath: /
 definitions:
-  api.ErrorResponse:
+  dto.ErrorResponse:
     properties:
       error:
         example: Invalid signature
         type: string
     type: object
-  api.ProfileResponse:
-    properties:
-      address:
-        example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
-        type: string
-      message:
-        example: Profile retrieved successfully
-        type: string
-    type: object
-  api.WalletLoginRequest:
+  dto.LoginRequest:
     properties:
       address:
         example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
@@ -31,13 +22,22 @@ definitions:
     - message
     - signature
     type: object
-  api.WalletLoginResponse:
+  dto.LoginResponse:
     properties:
       address:
         example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
         type: string
       token:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  dto.ProfileResponse:
+    properties:
+      address:
+        example: 0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
+        type: string
+      message:
+        example: Profile retrieved successfully
         type: string
     type: object
 host: localhost:8080
@@ -63,19 +63,19 @@ paths:
       - application/json
       responses:
         "200":
-          description: 用户信息
+          description: OK
           schema:
-            $ref: '#/definitions/api.ProfileResponse'
+            $ref: '#/definitions/dto.ProfileResponse'
         "401":
-          description: 未授权
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       security:
       - BearerAuth: []
       summary: 获取用户信息
       tags:
       - profile
-  /auth/login:
+  /login:
     post:
       consumes:
       - application/json
@@ -86,43 +86,23 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api.WalletLoginRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: 登录成功
+          description: OK
           schema:
-            $ref: '#/definitions/api.WalletLoginResponse'
+            $ref: '#/definitions/dto.LoginResponse'
         "400":
-          description: 请求参数错误
+          description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
-          description: 签名验证失败
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: 钱包登录
-      tags:
-      - auth
-  /auth/nonce:
-    get:
-      consumes:
-      - application/json
-      description: 获取用于钱包签名的随机 nonce
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 返回随机 nonce
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 获取随机 nonce
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: 用户登录
       tags:
       - auth
 securityDefinitions:

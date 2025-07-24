@@ -1,43 +1,50 @@
 package router
 
 import (
-	"net/http"
 	"smart-route/internal/auth"
+	"smart-route/internal/handler"
+	"smart-route/internal/service"
+	"smart-route/pkg/config"
+	"smart-route/pkg/data"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterRoutes 注册所有 API 路由
-func RegisterRoutes(r *gin.Engine, authService *auth.AuthService) {
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "pong"})
-	})
+func RegisterRoutes(r *gin.Engine, cfg *config.Config, ds *data.DataService, redis *redis.Client) {
 
-	r.POST("/login", loginHandler)
+	jwtAuth := auth.NewJwtAuth(cfg, ds.DB)
 
-	// 示例：受保护路由
-	api := r.Group("/api")
-	api.Use(authService.AuthMiddleware())
-	api.GET("/profile", profileHandler)
+	userService := service.NewUserService(ds.DB)
 
-}
+	// 创建 handler
+	userHandler := handler.NewUserHandler(jwtAuth, userService)
 
-// loginHandler 用户登录接口（示例）
-func loginHandler(c *gin.Context) {
-	var req struct {
-		Address   string `json:"address" binding:"required"`
-		Signature string `json:"signature" binding:"required"`
+	// 用户接口
+	r.POST("/login", userHandler.Login)
+	user := r.Group("/user", jwtAuth.AuthMiddleware())
+	{
+		user.Use(jwtAuth.AuthMiddleware())
+		user.GET("/profile", userHandler.GetProfile)
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	// TODO: 验证签名、生成 token
-	c.JSON(http.StatusOK, gin.H{"token": "mock-jwt-token", "address": req.Address})
-}
 
-// profileHandler 示例受保护接口
-func profileHandler(c *gin.Context) {
-	address, _ := c.Get("address")
-	c.JSON(http.StatusOK, gin.H{"address": address, "message": "Profile retrieved successfully"})
+	tokenService := service.NewTokenService(ds.DB)
+	tokenHandler := handler.NewTokenHandler(tokenService)
+	token := r.Group("/token")
+	{
+		token.GET("/list", tokenHandler.ListTokens)
+	}
+
+	// 管理员接口,用于后台管理系统
+	adminUserService := service.NewAdminService(ds.DB)
+	adminUserHandler := handler.NewAdminHandler(jwtAuth, adminUserService)
+
+	r.POST("/admin/login", adminUserHandler.Login)
+	admin := r.Group("/admin", jwtAuth.AuthMiddleware())
+	{
+		admin.POST("/token/create", tokenHandler.CreateToken)
+		admin.GET("/token/list", tokenHandler.ListTokens)
+	}
 }

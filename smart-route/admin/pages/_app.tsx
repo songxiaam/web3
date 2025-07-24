@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from 'react-query'
 import { Toaster } from 'react-hot-toast'
 import '@rainbow-me/rainbowkit/styles.css'
 import '../styles/globals.css'
+import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [mainnet, polygon, sepolia],
@@ -28,12 +30,28 @@ const wagmiConfig = createConfig({
 
 const queryClient = new QueryClient()
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null
+    if (!token && router.pathname !== '/login') {
+      router.replace('/login')
+    }
+    if (token && router.pathname === '/login') {
+      router.replace('/')
+    }
+  }, [router.pathname])
+  return <>{children}</>
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
         <QueryClientProvider client={queryClient}>
-          <Component {...pageProps} />
+          <AuthGuard>
+            <Component {...pageProps} />
+          </AuthGuard>
           <Toaster position="top-right" />
         </QueryClientProvider>
       </RainbowKitProvider>
